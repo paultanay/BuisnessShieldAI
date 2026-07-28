@@ -1,0 +1,1250 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: BusinessShield API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: websites
+    description: Website management
+  - name: scans
+    description: Scan operations
+  - name: findings
+    description: Scan findings
+  - name: monitoring
+    description: Monitoring jobs
+  - name: alerts
+    description: Alerts and notifications
+  - name: reports
+    description: Reports
+  - name: policies
+    description: Generated policies
+  - name: dashboard
+    description: Dashboard aggregates
+  - name: team
+    description: Team members
+  - name: organizations
+    description: Organization profile and onboarding
+  - name: settings
+    description: Platform configuration
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Websites ────────────────────────────────────────────────────────────────
+  /websites:
+    get:
+      operationId: listWebsites
+      tags: [websites]
+      summary: List all websites for the authenticated user
+      responses:
+        "200":
+          description: List of websites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Website"
+    post:
+      operationId: createWebsite
+      tags: [websites]
+      summary: Add a new website to monitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebsiteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Website"
+
+  /websites/{id}:
+    get:
+      operationId: getWebsite
+      tags: [websites]
+      summary: Get a website by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Website
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Website"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateWebsite
+      tags: [websites]
+      summary: Update a website
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebsiteUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Website"
+    delete:
+      operationId: deleteWebsite
+      tags: [websites]
+      summary: Delete a website
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Scans ───────────────────────────────────────────────────────────────────
+  /websites/{id}/scans:
+    get:
+      operationId: listScans
+      tags: [scans]
+      summary: List scans for a website
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of scans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scan"
+    post:
+      operationId: triggerScan
+      tags: [scans]
+      summary: Trigger a new scan for a website
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanTriggerInput"
+      responses:
+        "201":
+          description: Scan queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+
+  /scans/{id}:
+    get:
+      operationId: getScan
+      tags: [scans]
+      summary: Get a scan by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scan"
+
+  # ─── Findings ────────────────────────────────────────────────────────────────
+  /scans/{id}/findings:
+    get:
+      operationId: listFindings
+      tags: [findings]
+      summary: List findings for a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of findings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanFinding"
+
+  # ─── Monitoring ──────────────────────────────────────────────────────────────
+  /websites/{id}/monitoring:
+    get:
+      operationId: getMonitoringConfig
+      tags: [monitoring]
+      summary: Get monitoring config for a website
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Monitoring config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitoringConfig"
+    put:
+      operationId: upsertMonitoringConfig
+      tags: [monitoring]
+      summary: Create or update monitoring config
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonitoringConfigInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitoringConfig"
+
+  # ─── Alerts ──────────────────────────────────────────────────────────────────
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List alerts for the user
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}/read:
+    patch:
+      operationId: markAlertRead
+      tags: [alerts]
+      summary: Mark an alert as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /alerts/read-all:
+    post:
+      operationId: markAllAlertsRead
+      tags: [alerts]
+      summary: Mark all alerts as read
+      responses:
+        "200":
+          description: Updated count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkUpdateResult"
+
+  # ─── Reports ─────────────────────────────────────────────────────────────────
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List reports for the user
+      responses:
+        "200":
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+
+  /reports/{id}:
+    get:
+      operationId: getReport
+      tags: [reports]
+      summary: Get a report by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  /scans/{id}/report:
+    post:
+      operationId: generateReport
+      tags: [reports]
+      summary: Generate a compliance report for a scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Generated report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  # ─── Policies ────────────────────────────────────────────────────────────────
+  /policies:
+    get:
+      operationId: listPolicies
+      tags: [policies]
+      summary: List generated policies for the user
+      responses:
+        "200":
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Policy"
+
+  /policies/generate:
+    post:
+      operationId: generatePolicy
+      tags: [policies]
+      summary: Generate a policy document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyGenerateInput"
+      responses:
+        "201":
+          description: Generated policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+
+  /policies/{id}:
+    get:
+      operationId: getPolicy
+      tags: [policies]
+      summary: Get a policy by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+    delete:
+      operationId: deletePolicy
+      tags: [policies]
+      summary: Delete a policy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Dashboard ───────────────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get overall dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/activity:
+    get:
+      operationId: getDashboardActivity
+      tags: [dashboard]
+      summary: Get recent activity feed
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/compliance-trend:
+    get:
+      operationId: getComplianceTrend
+      tags: [dashboard]
+      summary: Get compliance score trend over time
+      responses:
+        "200":
+          description: Trend data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendPoint"
+
+  /dashboard/risk-breakdown:
+    get:
+      operationId: getRiskBreakdown
+      tags: [dashboard]
+      summary: Get risk breakdown by category across all websites
+      responses:
+        "200":
+          description: Risk breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskCategory"
+
+  # ─── Team ────────────────────────────────────────────────────────────────────
+  /team/members:
+    get:
+      operationId: listTeamMembers
+      tags: [team]
+      summary: List team members
+      responses:
+        "200":
+          description: Team members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+    post:
+      operationId: inviteTeamMember
+      tags: [team]
+      summary: Invite a team member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInviteInput"
+      responses:
+        "201":
+          description: Invited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  /team/members/{id}:
+    delete:
+      operationId: removeTeamMember
+      tags: [team]
+      summary: Remove a team member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  # ─── Developer / API Keys ────────────────────────────────────────────────────
+  /developer/keys:
+    get:
+      operationId: listApiKeys
+      tags: [developer]
+      summary: List API keys
+      responses:
+        "200":
+          description: API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKey"
+    post:
+      operationId: createApiKey
+      tags: [developer]
+      summary: Create a new API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApiKeyBody"
+      responses:
+        "201":
+          description: Created — key shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyCreated"
+
+  /developer/keys/{id}:
+    delete:
+      operationId: revokeApiKey
+      tags: [developer]
+      summary: Revoke an API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Revoked
+
+  # ─── Organization & Onboarding ───────────────────────────────────────────────
+  /onboarding/status:
+    get:
+      operationId: getOnboardingStatus
+      tags: [organizations]
+      summary: Check if onboarding is complete for the current user
+      responses:
+        "200":
+          description: Onboarding status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
+
+  /onboarding/complete:
+    post:
+      operationId: completeOnboarding
+      tags: [organizations]
+      summary: Complete onboarding and save organization profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingInput"
+      responses:
+        "201":
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationProfile"
+
+  /organizations/me:
+    get:
+      operationId: getMyOrganization
+      tags: [organizations]
+      summary: Get current user's organization profile
+      responses:
+        "200":
+          description: Organization profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationProfile"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateMyOrganization
+      tags: [organizations]
+      summary: Update organization profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrganizationUpdate"
+      responses:
+        "200":
+          description: Updated organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationProfile"
+
+  # ─── Audit Logs ──────────────────────────────────────────────────────────────
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [audit]
+      summary: List audit log entries
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    # ── Websites ──────────────────────────────────────────────────────────────
+    Website:
+      type: object
+      required: [id, userId, url, name, status, riskScore, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        url:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, paused, error]
+        riskScore:
+          type: ["integer", "null"]
+        complianceScore:
+          type: ["integer", "null"]
+        lastScannedAt:
+          type: ["string", "null"]
+        nextScanAt:
+          type: ["string", "null"]
+        monitoringEnabled:
+          type: boolean
+        scanFrequency:
+          type: ["string", "null"]
+          enum: [daily, weekly, monthly, "null"]
+        sslExpiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    WebsiteInput:
+      type: object
+      required: [url, name]
+      properties:
+        url:
+          type: string
+          format: uri
+        name:
+          type: string
+        monitoringEnabled:
+          type: boolean
+        scanFrequency:
+          type: string
+          enum: [daily, weekly, monthly]
+
+    WebsiteUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        status:
+          type: string
+          enum: [active, paused]
+        monitoringEnabled:
+          type: boolean
+        scanFrequency:
+          type: string
+          enum: [daily, weekly, monthly]
+
+    # ── Scans ─────────────────────────────────────────────────────────────────
+    Scan:
+      type: object
+      required: [id, websiteId, status, scanTypes, createdAt]
+      properties:
+        id:
+          type: integer
+        websiteId:
+          type: integer
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        scanTypes:
+          type: array
+          items:
+            type: string
+        riskScore:
+          type: ["integer", "null"]
+        complianceScore:
+          type: ["integer", "null"]
+        summary:
+          type: ["string", "null"]
+        findingsCount:
+          type: ["integer", "null"]
+        criticalCount:
+          type: ["integer", "null"]
+        highCount:
+          type: ["integer", "null"]
+        mediumCount:
+          type: ["integer", "null"]
+        lowCount:
+          type: ["integer", "null"]
+        completedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ScanTriggerInput:
+      type: object
+      properties:
+        scanTypes:
+          type: array
+          items:
+            type: string
+          default: [accessibility, ssl, security, privacy, seo, performance]
+
+    # ── Findings ──────────────────────────────────────────────────────────────
+    ScanFinding:
+      type: object
+      required: [id, scanId, category, severity, title, description, createdAt]
+      properties:
+        id:
+          type: integer
+        scanId:
+          type: integer
+        category:
+          type: string
+          enum: [accessibility, ssl, security, privacy, seo, performance, legal]
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        title:
+          type: string
+        description:
+          type: string
+        recommendation:
+          type: ["string", "null"]
+        codeSnippet:
+          type: ["string", "null"]
+        wcagCriteria:
+          type: ["string", "null"]
+        element:
+          type: ["string", "null"]
+        isFixed:
+          type: boolean
+        createdAt:
+          type: string
+
+    # ── Monitoring ────────────────────────────────────────────────────────────
+    MonitoringConfig:
+      type: object
+      required: [id, websiteId, enabled, frequency, alertChannels, createdAt]
+      properties:
+        id:
+          type: integer
+        websiteId:
+          type: integer
+        enabled:
+          type: boolean
+        frequency:
+          type: string
+          enum: [hourly, daily, weekly]
+        alertChannels:
+          type: array
+          items:
+            type: string
+        emailAlerts:
+          type: boolean
+        slackWebhookUrl:
+          type: ["string", "null"]
+        discordWebhookUrl:
+          type: ["string", "null"]
+        sslExpiryWarningDays:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    MonitoringConfigInput:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        frequency:
+          type: string
+          enum: [hourly, daily, weekly]
+        emailAlerts:
+          type: boolean
+        slackWebhookUrl:
+          type: ["string", "null"]
+        discordWebhookUrl:
+          type: ["string", "null"]
+        sslExpiryWarningDays:
+          type: integer
+
+    # ── Alerts ────────────────────────────────────────────────────────────────
+    Alert:
+      type: object
+      required: [id, userId, type, title, message, isRead, severity, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        websiteId:
+          type: ["integer", "null"]
+        type:
+          type: string
+          enum: [scan_complete, ssl_expiry, compliance_drift, security_issue, downtime, info]
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        title:
+          type: string
+        message:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+
+    BulkUpdateResult:
+      type: object
+      required: [count]
+      properties:
+        count:
+          type: integer
+
+    # ── Reports ───────────────────────────────────────────────────────────────
+    Report:
+      type: object
+      required: [id, userId, scanId, title, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        scanId:
+          type: integer
+        websiteId:
+          type: ["integer", "null"]
+        title:
+          type: string
+        status:
+          type: string
+          enum: [generating, ready, failed]
+        executiveSummary:
+          type: ["string", "null"]
+        recommendations:
+          type: ["string", "null"]
+        riskScore:
+          type: ["integer", "null"]
+        complianceScore:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    # ── Policies ──────────────────────────────────────────────────────────────
+    Policy:
+      type: object
+      required: [id, userId, type, title, content, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        websiteId:
+          type: ["integer", "null"]
+        type:
+          type: string
+          enum: [privacy_policy, cookie_policy, accessibility_statement, terms_of_service]
+        title:
+          type: string
+        content:
+          type: string
+        websiteUrl:
+          type: ["string", "null"]
+        companyName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    PolicyGenerateInput:
+      type: object
+      required: [type, companyName, websiteUrl]
+      properties:
+        type:
+          type: string
+          enum: [privacy_policy, cookie_policy, accessibility_statement, terms_of_service]
+        companyName:
+          type: string
+        websiteUrl:
+          type: string
+        websiteId:
+          type: ["integer", "null"]
+        additionalContext:
+          type: string
+
+    # ── Dashboard ─────────────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [totalWebsites, activeWebsites, totalScans, avgRiskScore, avgComplianceScore, unreadAlerts, criticalIssues, websitesAtRisk]
+      properties:
+        totalWebsites:
+          type: integer
+        activeWebsites:
+          type: integer
+        totalScans:
+          type: integer
+        avgRiskScore:
+          type: ["integer", "null"]
+        avgComplianceScore:
+          type: ["integer", "null"]
+        unreadAlerts:
+          type: integer
+        criticalIssues:
+          type: integer
+        websitesAtRisk:
+          type: integer
+        lastScanAt:
+          type: ["string", "null"]
+
+    ActivityItem:
+      type: object
+      required: [id, type, title, description, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [scan_complete, alert_created, report_generated, website_added, policy_generated]
+        title:
+          type: string
+        description:
+          type: string
+        websiteId:
+          type: ["integer", "null"]
+        websiteName:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    TrendPoint:
+      type: object
+      required: [date, complianceScore, riskScore]
+      properties:
+        date:
+          type: string
+        complianceScore:
+          type: integer
+        riskScore:
+          type: integer
+
+    RiskCategory:
+      type: object
+      required: [category, score, issueCount, change]
+      properties:
+        category:
+          type: string
+        score:
+          type: integer
+        issueCount:
+          type: integer
+        change:
+          type: integer
+
+    # ── Team ──────────────────────────────────────────────────────────────────
+    TeamMember:
+      type: object
+      required: [id, userId, email, role, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        email:
+          type: string
+        name:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [owner, admin, member, viewer]
+        status:
+          type: string
+          enum: [active, invited, suspended]
+        createdAt:
+          type: string
+
+    TeamInviteInput:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, member, viewer]
+
+    # ── Developer / API Keys ──────────────────────────────────────────────────────
+    ApiKey:
+      type: object
+      required: [id, name, keyPrefix, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        keyPrefix:
+          type: string
+        isActive:
+          type: boolean
+        lastUsedAt:
+          type: ["string", "null"]
+        expiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ApiKeyCreated:
+      type: object
+      required: [id, name, keyPrefix, key, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        keyPrefix:
+          type: string
+        key:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+
+    CreateApiKeyBody:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        expiresAt:
+          type: string
+
+    # ── Organization & Onboarding ─────────────────────────────────────────────────
+    OnboardingStatus:
+      type: object
+      required: [completed]
+      properties:
+        completed:
+          type: boolean
+        organization:
+          $ref: "#/components/schemas/OrganizationProfile"
+
+    OrganizationProfile:
+      type: object
+      required: [id, userId, name, industry, country, size, primaryConcerns, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        name:
+          type: string
+        industry:
+          type: string
+          enum: [healthcare, fintech, ecommerce, saas, legal, media, education, nonprofit, other]
+        country:
+          type: string
+        size:
+          type: string
+          enum: ["1-10", "11-50", "51-200", "200+", enterprise]
+        primaryConcerns:
+          type: array
+          items:
+            type: string
+        websiteUrl:
+          type: ["string", "null"]
+        timezone:
+          type: ["string", "null"]
+        onboardingCompletedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    OnboardingInput:
+      type: object
+      required: [name, industry, country, size, primaryConcerns]
+      properties:
+        name:
+          type: string
+        industry:
+          type: string
+          enum: [healthcare, fintech, ecommerce, saas, legal, media, education, nonprofit, other]
+        country:
+          type: string
+        size:
+          type: string
+          enum: ["1-10", "11-50", "51-200", "200+", enterprise]
+        primaryConcerns:
+          type: array
+          items:
+            type: string
+        websiteUrl:
+          type: string
+        timezone:
+          type: string
+
+    OrganizationUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        industry:
+          type: string
+          enum: [healthcare, fintech, ecommerce, saas, legal, media, education, nonprofit, other]
+        country:
+          type: string
+        size:
+          type: string
+          enum: ["1-10", "11-50", "51-200", "200+", enterprise]
+        primaryConcerns:
+          type: array
+          items:
+            type: string
+        websiteUrl:
+          type: string
+        timezone:
+          type: string
+
+    # ── Audit Logs ────────────────────────────────────────────────────────────────
+    AuditLog:
+      type: object
+      required: [id, userId, action, resource, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        action:
+          type: string
+        resource:
+          type: string
+        resourceId:
+          type: ["string", "null"]
+        ipAddress:
+          type: ["string", "null"]
+        createdAt:
+          type: string
